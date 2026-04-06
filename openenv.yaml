@@ -1,0 +1,23 @@
+name: "LLM Prompt Auto-Tuner"
+description: "Expert Reinforcement Learning environment for optimizing LLM prompts using the HF Inference API."
+version: "1.0.0"
+
+# Env Specs
+action_space:
+  type: "Discrete"
+  n: 5
+  description: "Set of 5 prompt modifiers (Concise, JSON, Key-Explanation, ID-Focus, Extraction-Strict)"
+
+observation_space:
+  type: "Box"
+  shape: [128]
+  low: 0.0
+  high: 1.0
+  dtype: "float32"
+  description: "Simulated 128-dim prompt embedding vector"
+
+# Requirements
+hardware:
+  vCPU: 2
+  RAM: "8GB"
+  GPU: "None"

@@ -1,0 +1,13 @@
+# Core ML & RL
+torch
+transformers
+trl
+gymnasium
+numpy
+
+# API & Serving
+openai
+fastapi
+uvicorn
+python-dotenv
+requests
