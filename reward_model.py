@@ -32,6 +32,23 @@ def _extract_predicted_keywords(output):
             values.extend(_normalize_text(item) for item in v)
     return values
 
+
+def _count_fuzzy_matches(expected_items, predicted_items):
+    """Count one-to-one fuzzy matches (exact, substring, or superstring)."""
+    used_pred_indices = set()
+    match_count = 0
+
+    for exp in expected_items:
+        for idx, pred in enumerate(predicted_items):
+            if idx in used_pred_indices:
+                continue
+            if exp == pred or exp in pred or pred in exp:
+                used_pred_indices.add(idx)
+                match_count += 1
+                break
+
+    return match_count
+
 def grade(output, expected):
     """
     Expert Grader Function for ML Submission.
@@ -53,11 +70,12 @@ def grade(output, expected):
             hits = sum(1 for kw in keywords if kw in output_lc)
             return round(min((hits / len(keywords)) * 0.6, 0.6), 2)
 
-        expected_set = set(keywords)
-        predicted_set = set(predicted)
-        true_positive = len(expected_set.intersection(predicted_set))
-        precision = true_positive / len(predicted_set) if predicted_set else 0.0
-        recall = true_positive / len(expected_set) if expected_set else 0.0
+        expected_items = sorted(set(keywords))
+        predicted_items = sorted(set(predicted))
+        match_count = _count_fuzzy_matches(expected_items, predicted_items)
+
+        precision = match_count / len(predicted_items) if predicted_items else 0.0
+        recall = match_count / len(expected_items) if expected_items else 0.0
 
         if precision + recall == 0:
             return 0.0

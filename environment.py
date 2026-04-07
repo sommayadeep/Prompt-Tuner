@@ -103,16 +103,24 @@ class PromptEnv(gym.Env):
         sample_input = self.training_example.get("input", "")
         task_prompt = (
             f"{self.current_prompt}\n"
-            "Extract key entities/keywords from the input text and respond in JSON.\n"
+            "Extract key entities/keywords from the input text.\n"
             f"Input: {sample_input}\n"
-            "Output JSON with a 'keywords' field."
+            "Return ONLY a valid JSON object with this exact schema:\n"
+            '{"keywords": ["keyword1", "keyword2"]}\n'
+            "Do not include markdown, explanations, or extra text."
         )
 
         # Remote inference using OpenAI-compatible client, with HTTP fallback
         try:
             response = self.client.chat.completions.create(
                 model=self.cfg["MODEL_NAME"],
-                messages=[{"role": "user", "content": task_prompt}],
+                messages=[
+                    {
+                        "role": "system",
+                        "content": "You are a strict JSON extraction engine. Output only valid JSON.",
+                    },
+                    {"role": "user", "content": task_prompt},
+                ],
                 max_tokens=150
             )
             output_data = response.choices[0].message.content.strip()
