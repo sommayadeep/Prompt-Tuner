@@ -60,14 +60,15 @@ class PromptEnv(gym.Env):
         mod = modifiers[action]
         self.current_prompt = f"{self.current_prompt}. {mod}"
         
+        # Remote Inference using OpenAI Client (Mandatory Requirement)
+        response = self.client.chat.completions.create(
+            model=self.cfg["MODEL_NAME"],
+            messages=[{"role": "user", "content": self.current_prompt}],
+            max_tokens=150
+        )
+        output_data = response.choices[0].message.content.strip()
         # Simulate API response for demo (replace with actual call when token/model is available)
-        # response = self.client.chat.completions.create(
-        #     model=self.cfg["MODEL_NAME"],
-        #     messages=[{"role": "user", "content": self.current_prompt}],
-        #     max_tokens=150
-        # )
-        # output_data = response.choices[0].message.content.strip()
-        output_data = '{"name": "Sanjay", "role": "Dev"}'  # Dummy response for demo
+        # output_data = '{"name": "Sanjay", "role": "Dev"}'  # Dummy response for demo
 
         # Grader Logic (Mandatory Requirement)
         target = {"name": "Sanjay", "role": "Dev"}
