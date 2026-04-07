@@ -19,8 +19,9 @@ def get_config():
         "LOCAL_IMAGE_NAME": os.environ.get("LOCAL_IMAGE_NAME")
     }
 
-    # Strict Validation: Fail fast if critical keys are missing
-    missing = [key for key, val in config.items() if key != "HF_TOKEN" and not val]
+    # Strict Validation: only API_BASE_URL and MODEL_NAME are mandatory.
+    optional_keys = {"HF_TOKEN", "LOCAL_IMAGE_NAME"}
+    missing = [key for key, val in config.items() if key not in optional_keys and not val]
     if missing:
         raise EnvironmentError(
             f"\n[CRITICAL ERROR] Missing mandatory environment variables: {', '.join(missing)}\n"
