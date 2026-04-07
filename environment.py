@@ -31,6 +31,10 @@ class PromptEnv(gym.Env):
         self.current_prompt = "Extract user data as JSON."
         self.current_step = 0
         self.max_steps = 3
+        self.training_example = {
+            "input": "The Eiffel Tower is tall.",
+            "expected_keywords": ["Eiffel"],
+        }
 
     def reset(self, seed=None, options=None):
         """Resets the environment to the default state."""
@@ -43,7 +47,7 @@ class PromptEnv(gym.Env):
         """Simulated observation space (state)."""
         return np.random.rand(128).astype(np.float32)
 
-    def _fallback_chat_completion(self):
+    def _fallback_chat_completion(self, prompt_text):
         """Fallback HTTP calls for different HF endpoint shapes."""
         base_url = self.cfg["API_BASE_URL"].rstrip("/")
         model = self.cfg["MODEL_NAME"]
@@ -61,7 +65,7 @@ class PromptEnv(gym.Env):
         }
         payload = {
             "model": model,
-            "messages": [{"role": "user", "content": self.current_prompt}],
+            "messages": [{"role": "user", "content": prompt_text}],
             "max_tokens": 150,
         }
 
@@ -95,21 +99,30 @@ class PromptEnv(gym.Env):
         mod = modifiers[action]
         self.current_prompt = f"{self.current_prompt}. {mod}"
         
+        # Build task from training data so rewards follow user-provided examples.
+        sample_input = self.training_example.get("input", "")
+        task_prompt = (
+            f"{self.current_prompt}\n"
+            "Extract key entities/keywords from the input text and respond in JSON.\n"
+            f"Input: {sample_input}\n"
+            "Output JSON with a 'keywords' field."
+        )
+
         # Remote inference using OpenAI-compatible client, with HTTP fallback
         try:
             response = self.client.chat.completions.create(
                 model=self.cfg["MODEL_NAME"],
-                messages=[{"role": "user", "content": self.current_prompt}],
+                messages=[{"role": "user", "content": task_prompt}],
                 max_tokens=150
             )
             output_data = response.choices[0].message.content.strip()
         except Exception:
-            output_data = self._fallback_chat_completion()
+            output_data = self._fallback_chat_completion(task_prompt)
         # Simulate API response for demo (replace with actual call when token/model is available)
         # output_data = '{"name": "Sanjay", "role": "Dev"}'  # Dummy response for demo
 
         # Grader Logic (Mandatory Requirement)
-        target = {"name": "Sanjay", "role": "Dev"}
+        target = self.training_example
         reward = reward_model.grade(output_data, target)
         
         terminated = self.current_step >= self.max_steps

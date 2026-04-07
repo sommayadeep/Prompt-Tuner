@@ -18,12 +18,18 @@ def run_optimization(model_id, seed_prompt, training_data):
     
     try:
         # Validate JSON input early so users get immediate feedback.
+        parsed_data = []
         if training_data:
-            json.loads(training_data)
+            parsed_data = json.loads(training_data)
 
         env = PromptEnv()
         if model_id:
             env.cfg["MODEL_NAME"] = model_id.strip()
+        if isinstance(parsed_data, list) and parsed_data:
+            if isinstance(parsed_data[0], dict):
+                env.training_example = parsed_data[0]
+        elif isinstance(parsed_data, dict):
+            env.training_example = parsed_data
 
         obs, info = env.reset()
         if seed_prompt:
@@ -38,7 +44,8 @@ def run_optimization(model_id, seed_prompt, training_data):
         for step_idx in range(env.max_steps):
             action = step_idx % env.action_space.n
             obs, reward, terminated, truncated, info = env.step(action)
-            logs.append(f"Step {step_idx + 1}: Action {action} -> Reward {reward}")
+            short_output = str(info.get("output", ""))[:120].replace("\n", " ")
+            logs.append(f"Step {step_idx + 1}: Action {action} -> Reward {reward} | Output: {short_output}")
 
             if reward > best_reward:
                 best_reward = reward

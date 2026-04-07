@@ -9,6 +9,16 @@ def grade(output, expected):
     """
     score = 0.0
     
+    # Keyword-based grading path for dataset style examples.
+    if expected and isinstance(expected, dict) and "expected_keywords" in expected:
+        keywords = expected.get("expected_keywords", [])
+        if not keywords:
+            return 0.0
+
+        output_lc = str(output).lower()
+        hits = sum(1 for kw in keywords if str(kw).lower() in output_lc)
+        return round(min(hits / len(keywords), 1.0), 2)
+
     # 1. Format Check (0.4)
     # Attempt to extract JSON if the model is talkative
     try:
