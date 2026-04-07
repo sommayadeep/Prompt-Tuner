@@ -15,7 +15,8 @@ def get_config():
     config = {
         "API_BASE_URL": url,
         "MODEL_NAME": os.environ.get("MODEL_NAME", "HuggingFaceH4/zephyr-7b-beta"),
-        "HF_TOKEN": os.environ.get("HF_TOKEN")
+        "HF_TOKEN": os.environ.get("HF_TOKEN"),
+        "LOCAL_IMAGE_NAME": os.environ.get("LOCAL_IMAGE_NAME")
     }
 
     # Strict Validation: Fail fast if critical keys are missing
