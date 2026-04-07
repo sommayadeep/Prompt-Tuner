@@ -18,6 +18,9 @@ def run_optimization(model_id, seed_prompt, training_data):
     
     try:
         env = PromptEnv()
+        if model_id:
+            env.cfg["MODEL_NAME"] = model_id.strip()
+
         obs, info = env.reset()
         yield "Environment Reset Successful", "", "Running Step 1..."
         
@@ -25,7 +28,8 @@ def run_optimization(model_id, seed_prompt, training_data):
         yield "Testing Initial Prompt...", str(reward), f"Action 0 taken. Reward: {reward}"
             
     except Exception as e:
-        yield "Error", "Error", str(e)
+        error_text = f"{type(e).__name__}: {e}"
+        yield "Error", "Error", error_text
 
 
 with gr.Blocks(theme=ocean_theme, title="Prompt Auto-Tuner Dashboard") as demo:
