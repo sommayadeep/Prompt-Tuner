@@ -15,8 +15,9 @@ def get_config():
         "HF_TOKEN": os.environ.get("HF_TOKEN")
     }
 
-    # Strict Validation: Fail fast if critical keys are missing
-    missing = [key for key, val in config.items() if not val]
+    # Startup should only require endpoint + model. HF token can be provided later in Space settings.
+    required_keys = ["API_BASE_URL", "MODEL_NAME"]
+    missing = [key for key in required_keys if not config.get(key)]
     if missing:
         raise EnvironmentError(
             f"\n[CRITICAL ERROR] Missing mandatory environment variables: {', '.join(missing)}\n"

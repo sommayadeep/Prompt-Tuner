@@ -13,15 +13,20 @@ class PromptEnv(gym.Env):
     def __init__(self):
         super(PromptEnv, self).__init__()
         self.cfg = config.get_config()
-        self.client = OpenAI(
-            base_url=self.cfg["API_BASE_URL"],
-            api_key=self.cfg["HF_TOKEN"]
-        )
-        try:
-            from huggingface_hub import InferenceClient
-            self.hf_client = InferenceClient(token=self.cfg["HF_TOKEN"])
-        except ImportError:
-            self.hf_client = None
+        self.client = None
+        self.hf_client = None
+
+        token = self.cfg.get("HF_TOKEN")
+        if token:
+            self.client = OpenAI(
+                base_url=self.cfg["API_BASE_URL"],
+                api_key=token
+            )
+            try:
+                from huggingface_hub import InferenceClient
+                self.hf_client = InferenceClient(token=token)
+            except ImportError:
+                self.hf_client = None
         
         # Action Space: 5 modifiers
         self.action_space = spaces.Discrete(5)
@@ -82,6 +87,11 @@ class PromptEnv(gym.Env):
         
         # Remote Inference
         try:
+            if not self.cfg.get("HF_TOKEN"):
+                raise RuntimeError(
+                    "Missing HF_TOKEN. Add it in Hugging Face Space Settings -> Variables and secrets."
+                )
+
             model_id = self.cfg["MODEL_NAME"]
             if model_id == "meta-llama/Llama-3-8B-Instruct":
                 model_id = "meta-llama/Meta-Llama-3-8B-Instruct"  # the exact path required by hub
