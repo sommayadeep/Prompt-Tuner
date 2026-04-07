@@ -40,7 +40,7 @@ def run_optimization(model_id, seed_prompt, training_data):
                 
                 logs += f"> Action {action} taken. Reward: {reward} | Output Preview: {output_str[:40]}...\n"
                 
-                if reward > best_score:
+                if reward > best_score or (reward == best_score and prompt_str != best_prompt):
                     best_score = reward
                     best_prompt = prompt_str
             else:

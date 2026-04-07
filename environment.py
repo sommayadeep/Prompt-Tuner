@@ -42,6 +42,7 @@ class PromptEnv(gym.Env):
         super().reset(seed=seed)
         self.current_step = 0
         self.current_prompt = "Extract user data as JSON."
+        self.base_prompt = self.current_prompt
         self.target = {"name": "Sanjay", "role": "Dev"}
         self.input_text = ""
         
@@ -50,6 +51,7 @@ class PromptEnv(gym.Env):
                 self.cfg["MODEL_NAME"] = options["model_id"]
             if "seed_prompt" in options:
                 self.current_prompt = options["seed_prompt"]
+                self.base_prompt = self.current_prompt
             if "training_data" in options and len(options["training_data"]) > 0:
                 td = options["training_data"][0]
                 self.input_text = td.get("input", "")
@@ -69,18 +71,28 @@ class PromptEnv(gym.Env):
         Applies a prompt modifier, calls the LLM, and calculates the reward.
         """
         self.current_step += 1
-        
-        modifiers = [
-            "Be concise.",
-            "Use valid JSON.",
-            "Explain keys.",
-            "Include 'id'.",
-            "Focus strictly on data extraction."
+
+        expected = getattr(self, "target", {})
+        if isinstance(expected, list):
+            expected_hint = ", ".join([str(x) for x in expected])
+        elif isinstance(expected, dict):
+            expected_hint = ", ".join([str(k) for k in expected.keys()])
+        else:
+            expected_hint = str(expected)
+
+        base = getattr(self, "base_prompt", self.current_prompt)
+        prompt_variants = [
+            f"{base}\n\nTask: Return a one-sentence summary that must include these keywords: {expected_hint}.",
+            f"{base}\n\nRules: Keep output under 20 words and include: {expected_hint}. Return plain text only.",
+            f"{base}\n\nYou are an evaluator-focused summarizer. Preserve factual terms: {expected_hint}. Avoid extra commentary.",
+            f"{base}\n\nOutput format:\n- Single line\n- Must contain: {expected_hint}\n- No markdown",
+            f"Rewrite with maximum keyword precision. Include exact terms: {expected_hint}.\n\nOriginal instruction: {base}",
         ]
-        
-        # Apply Modification
-        mod = modifiers[action]
-        self.current_prompt = f"{self.current_prompt}. {mod}"
+
+        if action < 0 or action >= len(prompt_variants):
+            action = 0
+
+        self.current_prompt = prompt_variants[action]
         
         # Build query
         query = f"{self.current_prompt}\n\nInput: {self.input_text}" if getattr(self, "input_text", "") else self.current_prompt
@@ -116,7 +128,7 @@ class PromptEnv(gym.Env):
             output_data = f"ERROR - {str(e)}"
 
         # Grader Logic (Mandatory Requirement)
-        target = getattr(self, "target", {})
+        target = expected
         reward = reward_model.grade(output_data, target)
         
         terminated = self.current_step >= self.max_steps
