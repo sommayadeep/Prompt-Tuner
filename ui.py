@@ -17,15 +17,37 @@ def run_optimization(model_id, seed_prompt, training_data):
     yield "Starting Optimization Process...", "", "Initializing Environment..."
     
     try:
+        # Validate JSON input early so users get immediate feedback.
+        if training_data:
+            json.loads(training_data)
+
         env = PromptEnv()
         if model_id:
             env.cfg["MODEL_NAME"] = model_id.strip()
 
         obs, info = env.reset()
-        yield "Environment Reset Successful", "", "Running Step 1..."
-        
-        obs, reward, terminated, truncated, info = env.step(0)
-        yield "Testing Initial Prompt...", str(reward), f"Action 0 taken. Reward: {reward}"
+        if seed_prompt:
+            env.current_prompt = seed_prompt.strip()
+
+        yield "Environment Reset Successful", "", "Running multi-step optimization..."
+
+        best_reward = float("-inf")
+        best_prompt = env.current_prompt
+        logs = []
+
+        for step_idx in range(env.max_steps):
+            action = step_idx % env.action_space.n
+            obs, reward, terminated, truncated, info = env.step(action)
+            logs.append(f"Step {step_idx + 1}: Action {action} -> Reward {reward}")
+
+            if reward > best_reward:
+                best_reward = reward
+                best_prompt = env.current_prompt
+
+            yield best_prompt, str(best_reward), "\n".join(logs)
+
+            if terminated or truncated:
+                break
             
     except Exception as e:
         error_text = f"{type(e).__name__}: {e}"
