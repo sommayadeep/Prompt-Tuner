@@ -1,6 +1,37 @@
 import json
 import re
 
+
+def _normalize_text(value):
+    return re.sub(r"\s+", " ", str(value).strip().lower())
+
+
+def _extract_predicted_keywords(output):
+    """Extract keyword candidates from JSON output when possible."""
+    try:
+        json_match = re.search(r'\{.*\}', output, re.DOTALL)
+        clean_json = json_match.group(0) if json_match else output
+        data = json.loads(clean_json)
+    except (json.JSONDecodeError, AttributeError, TypeError):
+        return []
+
+    # Prefer explicit keyword fields when present.
+    for key in ["keywords", "expected_keywords", "entities", "tags"]:
+        if key in data:
+            val = data[key]
+            if isinstance(val, list):
+                return [_normalize_text(v) for v in val]
+            return [_normalize_text(val)]
+
+    # Fallback: flatten all leaf string/int values from JSON object.
+    values = []
+    for v in data.values() if isinstance(data, dict) else []:
+        if isinstance(v, (str, int, float)):
+            values.append(_normalize_text(v))
+        elif isinstance(v, list):
+            values.extend(_normalize_text(item) for item in v)
+    return values
+
 def grade(output, expected):
     """
     Expert Grader Function for ML Submission.
@@ -11,13 +42,29 @@ def grade(output, expected):
     
     # Keyword-based grading path for dataset style examples.
     if expected and isinstance(expected, dict) and "expected_keywords" in expected:
-        keywords = expected.get("expected_keywords", [])
+        keywords = [_normalize_text(k) for k in expected.get("expected_keywords", [])]
         if not keywords:
             return 0.0
 
-        output_lc = str(output).lower()
-        hits = sum(1 for kw in keywords if str(kw).lower() in output_lc)
-        return round(min(hits / len(keywords), 1.0), 2)
+        predicted = _extract_predicted_keywords(output)
+        if not predicted:
+            # If output is not JSON, fall back to weak text matching with cap.
+            output_lc = _normalize_text(output)
+            hits = sum(1 for kw in keywords if kw in output_lc)
+            return round(min((hits / len(keywords)) * 0.6, 0.6), 2)
+
+        expected_set = set(keywords)
+        predicted_set = set(predicted)
+        true_positive = len(expected_set.intersection(predicted_set))
+        precision = true_positive / len(predicted_set) if predicted_set else 0.0
+        recall = true_positive / len(expected_set) if expected_set else 0.0
+
+        if precision + recall == 0:
+            return 0.0
+
+        # F1-like score rewards both completeness and avoiding extra wrong keywords.
+        f1 = (2 * precision * recall) / (precision + recall)
+        return round(min(max(f1, 0.0), 1.0), 2)
 
     # 1. Format Check (0.4)
     # Attempt to extract JSON if the model is talkative
