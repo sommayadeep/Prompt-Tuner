@@ -1,7 +1,7 @@
 import gradio as gr
-import requests
 import json
 import os
+from environment import PromptEnv
 
 # Define the custom Theme
 ocean_theme = gr.themes.Soft(
@@ -13,29 +13,19 @@ ocean_theme = gr.themes.Soft(
 
 # API Helper function
 def run_optimization(model_id, seed_prompt, training_data):
-    # This acts as an API Client hitting our own FastAPI endpoints
-    # 1. We would typically hit /reset to start
-    # 2. Then loop /step. For UI demonstration, we'll stream logs.
-    
+    # Direct calls to the environment for demonstration
     yield "Starting Optimization Process...", "", "Initializing Environment..."
     
     try:
-        # Ping the /reset endpoint
-        requests.post("http://localhost:7860/reset")
+        env = PromptEnv()
+        obs, info = env.reset()
         yield "Environment Reset Successful", "", "Running Step 1..."
         
-        # Ping the /step endpoint
-        # The true action logic requires RL integers. For UI Demo purposes, we simulate the log output.
-        res = requests.post("http://localhost:7860/step", json={"action": 0})
-        if res.status_code == 200:
-            data = res.json()
-            reward = data.get("reward", 0.0)
-            yield "Testing Initial Prompt...", str(reward), f"Action 0 taken. Reward: {reward}"
-        else:
-            yield "Error", "Error", str(res.text)
+        obs, reward, terminated, truncated, info = env.step(0)
+        yield "Testing Initial Prompt...", str(reward), f"Action 0 taken. Reward: {reward}"
             
     except Exception as e:
-        yield "Connection Error", "Error", str(e)
+        yield "Error", "Error", str(e)
 
 
 with gr.Blocks(theme=ocean_theme, title="Prompt Auto-Tuner Dashboard") as demo:
