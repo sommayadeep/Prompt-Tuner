@@ -16,7 +16,7 @@ def get_config():
     }
 
     # Strict Validation: Fail fast if critical keys are missing
-    missing = [key for key, val in config.items() if not val]
+    missing = [key for key, val in config.items() if key != "HF_TOKEN" and not val]
     if missing:
         raise EnvironmentError(
             f"\n[CRITICAL ERROR] Missing mandatory environment variables: {', '.join(missing)}\n"
