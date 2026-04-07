@@ -30,6 +30,11 @@ async def step_env(action: int = Body(..., embed=True)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+import gradio as gr
+from ui import demo
+app = gr.mount_gradio_app(app, demo, path="/ui")
+
+
 if __name__ == "__main__":
     # Validator expects port 7860
     uvicorn.run(app, host="0.0.0.0", port=7860)

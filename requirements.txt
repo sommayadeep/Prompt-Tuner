@@ -11,3 +11,5 @@ fastapi
 uvicorn
 python-dotenv
 requests
+gradio
+pydantic
