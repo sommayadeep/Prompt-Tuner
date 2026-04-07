@@ -1,6 +1,7 @@
 import gymnasium as gym
 from gymnasium import spaces
 import numpy as np
+import requests
 from openai import OpenAI
 import config
 import reward_model
@@ -60,13 +61,30 @@ class PromptEnv(gym.Env):
         mod = modifiers[action]
         self.current_prompt = f"{self.current_prompt}. {mod}"
         
-        # Remote Inference using OpenAI Client (Mandatory Requirement)
-        response = self.client.chat.completions.create(
-            model=self.cfg["MODEL_NAME"],
-            messages=[{"role": "user", "content": self.current_prompt}],
-            max_tokens=150
-        )
-        output_data = response.choices[0].message.content.strip()
+        # Remote inference using OpenAI-compatible client, with HTTP fallback
+        try:
+            response = self.client.chat.completions.create(
+                model=self.cfg["MODEL_NAME"],
+                messages=[{"role": "user", "content": self.current_prompt}],
+                max_tokens=150
+            )
+            output_data = response.choices[0].message.content.strip()
+        except Exception:
+            base_url = self.cfg["API_BASE_URL"].rstrip("/")
+            endpoint = f"{base_url}/chat/completions"
+            headers = {
+                "Authorization": f"Bearer {self.cfg.get('HF_TOKEN', '')}",
+                "Content-Type": "application/json",
+            }
+            payload = {
+                "model": self.cfg["MODEL_NAME"],
+                "messages": [{"role": "user", "content": self.current_prompt}],
+                "max_tokens": 150,
+            }
+            response = requests.post(endpoint, headers=headers, json=payload, timeout=30)
+            response.raise_for_status()
+            data = response.json()
+            output_data = data["choices"][0]["message"]["content"].strip()
         # Simulate API response for demo (replace with actual call when token/model is available)
         # output_data = '{"name": "Sanjay", "role": "Dev"}'  # Dummy response for demo
 

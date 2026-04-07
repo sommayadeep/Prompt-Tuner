@@ -43,7 +43,7 @@ with gr.Blocks(theme=ocean_theme, title="Prompt Auto-Tuner Dashboard") as demo:
             
             model_id = gr.Textbox(
                 label="Target Model ID", 
-                value="meta-llama/Llama-3-8B-Instruct",
+                value="meta-llama/Meta-Llama-3-8B-Instruct",
                 info="The Hugging Face model to optimize for"
             )
             
