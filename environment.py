@@ -13,9 +13,13 @@ class PromptEnv(gym.Env):
     def __init__(self):
         super(PromptEnv, self).__init__()
         self.cfg = config.get_config()
+        
+        # Lazy initialization or handle missing token for startup
+        token = self.cfg.get("HF_TOKEN") or "DUMMY_TOKEN_FOR_STARTUP"
+        
         self.client = OpenAI(
             base_url=self.cfg["API_BASE_URL"],
-            api_key=self.cfg["HF_TOKEN"]
+            api_key=token
         )
         
         # Action Space: 5 modifiers
