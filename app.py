@@ -6,9 +6,16 @@ app = FastAPI(title="LLM Prompt Auto-Tuner Submission API")
 env = PromptEnv()
 
 @app.post("/reset")
-async def reset_env():
+async def reset_env(payload: dict = Body(default={})):
     """Mandatory Reset Endpoint."""
-    obs, info = env.reset()
+    options = {}
+    if "model_id" in payload:
+        options["model_id"] = payload["model_id"]
+    if "seed_prompt" in payload:
+        options["seed_prompt"] = payload["seed_prompt"]
+    if "training_data" in payload:
+        options["training_data"] = payload["training_data"]
+    obs, info = env.reset(options=options)
     return {"observation": obs.tolist(), "info": info}
 
 @app.post("/step")

@@ -7,6 +7,17 @@ def grade(output, expected):
     Returns: float between 0.0 and 1.0.
     Weights: 0.4 (Format) | 0.3 (Keys) | 0.3 (Values)
     """
+    
+    # Handle list of expected keywords directly
+    if isinstance(expected, list):
+        if not expected:
+            return 0.0
+        score = 0.0
+        for kw in expected:
+            if str(kw).lower() in output.lower():
+                score += 1.0 / len(expected)
+        return round(min(score, 1.0), 2)
+
     score = 0.0
     
     # 1. Format Check (0.4)

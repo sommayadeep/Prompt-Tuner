@@ -13,26 +13,41 @@ ocean_theme = gr.themes.Soft(
 
 # API Helper function
 def run_optimization(model_id, seed_prompt, training_data):
-    # This acts as an API Client hitting our own FastAPI endpoints
-    # 1. We would typically hit /reset to start
-    # 2. Then loop /step. For UI demonstration, we'll stream logs.
-    
     yield "Starting Optimization Process...", "", "Initializing Environment..."
     
     try:
-        # Ping the /reset endpoint
-        requests.post("http://localhost:7860/reset")
-        yield "Environment Reset Successful", "", "Running Step 1..."
+        td = json.loads(training_data)
         
-        # Ping the /step endpoint
-        # The true action logic requires RL integers. For UI Demo purposes, we simulate the log output.
-        res = requests.post("http://localhost:7860/step", json={"action": 0})
-        if res.status_code == 200:
-            data = res.json()
-            reward = data.get("reward", 0.0)
-            yield "Testing Initial Prompt...", str(reward), f"Action 0 taken. Reward: {reward}"
-        else:
-            yield "Error", "Error", str(res.text)
+        # Ping the /reset endpoint with UI inputs
+        requests.post("http://127.0.0.1:7860/reset", json={"seed_prompt": seed_prompt, "training_data": td, "model_id": model_id})
+        yield "Environment Reset Successful", "", "Running Steps...\n"
+        
+        logs = "Environment initialised with UI inputs.\n"
+        best_score = -1.0
+        best_prompt = seed_prompt
+        
+        # Mocking an RL loop of 5 actions to match the environment modifiers
+        for action in range(5):
+            yield f"Testing Action {action}...", str(best_score if best_score >= 0 else 0), logs + f"Running action {action}...\n"
+            
+            res = requests.post("http://127.0.0.1:7860/step", json={"action": action})
+            if res.status_code == 200:
+                data = res.json()
+                reward = data.get("reward", 0.0)
+                info = data.get("info", {})
+                output_str = info.get("output", "")
+                prompt_str = info.get("prompt", seed_prompt)
+                
+                logs += f"> Action {action} taken. Reward: {reward} | Output Preview: {output_str[:40]}...\n"
+                
+                if reward > best_score:
+                    best_score = reward
+                    best_prompt = prompt_str
+            else:
+                logs += f"Error: {res.text}\n"
+                break
+                
+        yield best_prompt, str(best_score), logs + "\nOptimization Complete!"
             
     except Exception as e:
         yield "Connection Error", "Error", str(e)

@@ -37,12 +37,27 @@ def run_inference():
         print(f"prompt: {full_prompt}")
         
         try:
-            response = client.chat.completions.create(
-                model=cfg["MODEL_NAME"],
-                messages=[{"role": "user", "content": full_prompt}],
-                max_tokens=150
-            )
-            output = response.choices[0].message.content.strip()
+            model_id = cfg["MODEL_NAME"]
+            if model_id == "meta-llama/Llama-3-8B-Instruct":
+                model_id = "meta-llama/Meta-Llama-3-8B-Instruct"
+
+            try:
+                from huggingface_hub import InferenceClient
+                hf_client = InferenceClient(token=cfg["HF_TOKEN"])
+                response = hf_client.chat_completion(
+                    messages=[{"role": "user", "content": full_prompt}],
+                    model=model_id,
+                    max_tokens=150
+                )
+                output = response.choices[0].message.content.strip()
+            except ImportError:
+                response = client.chat.completions.create(
+                    model=model_id,
+                    messages=[{"role": "user", "content": full_prompt}],
+                    max_tokens=150
+                )
+                output = response.choices[0].message.content.strip()
+                
             reward = reward_model.grade(output, task["target"])
             
             print(f"output: {output}")
