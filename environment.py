@@ -43,6 +43,40 @@ class PromptEnv(gym.Env):
         """Simulated observation space (state)."""
         return np.random.rand(128).astype(np.float32)
 
+    def _fallback_chat_completion(self):
+        """Fallback HTTP calls for different HF endpoint shapes."""
+        base_url = self.cfg["API_BASE_URL"].rstrip("/")
+        model = self.cfg["MODEL_NAME"]
+
+        candidate_endpoints = [
+            f"{base_url}/chat/completions",
+            f"https://router.huggingface.co/v1/chat/completions",
+            f"https://router.huggingface.co/hf-inference/models/{model}/v1/chat/completions",
+            f"https://api-inference.huggingface.co/v1/chat/completions",
+        ]
+
+        headers = {
+            "Authorization": f"Bearer {self.cfg.get('HF_TOKEN', '')}",
+            "Content-Type": "application/json",
+        }
+        payload = {
+            "model": model,
+            "messages": [{"role": "user", "content": self.current_prompt}],
+            "max_tokens": 150,
+        }
+
+        errors = []
+        for endpoint in candidate_endpoints:
+            try:
+                response = requests.post(endpoint, headers=headers, json=payload, timeout=30)
+                response.raise_for_status()
+                data = response.json()
+                return data["choices"][0]["message"]["content"].strip()
+            except Exception as e:
+                errors.append(f"{endpoint} -> {type(e).__name__}: {e}")
+
+        raise RuntimeError("All inference endpoints failed: " + " | ".join(errors))
+
     def step(self, action):
         """
         Applies a prompt modifier, calls the LLM, and calculates the reward.
@@ -70,23 +104,7 @@ class PromptEnv(gym.Env):
             )
             output_data = response.choices[0].message.content.strip()
         except Exception:
-            base_url = self.cfg["API_BASE_URL"].rstrip("/")
-            if "router.huggingface.co/hf-inference" in base_url:
-                base_url = "https://api-inference.huggingface.co/v1"
-            endpoint = f"{base_url}/chat/completions"
-            headers = {
-                "Authorization": f"Bearer {self.cfg.get('HF_TOKEN', '')}",
-                "Content-Type": "application/json",
-            }
-            payload = {
-                "model": self.cfg["MODEL_NAME"],
-                "messages": [{"role": "user", "content": self.current_prompt}],
-                "max_tokens": 150,
-            }
-            response = requests.post(endpoint, headers=headers, json=payload, timeout=30)
-            response.raise_for_status()
-            data = response.json()
-            output_data = data["choices"][0]["message"]["content"].strip()
+            output_data = self._fallback_chat_completion()
         # Simulate API response for demo (replace with actual call when token/model is available)
         # output_data = '{"name": "Sanjay", "role": "Dev"}'  # Dummy response for demo
 
