@@ -5,11 +5,6 @@ import uvicorn
 app = FastAPI(title="LLM Prompt Auto-Tuner Submission API")
 env = PromptEnv()
 
-@app.get("/")
-async def status():
-    """Mandatory Ping Endpoint."""
-    return {"status": "ok"}
-
 @app.post("/reset")
 async def reset_env():
     """Mandatory Reset Endpoint."""
@@ -32,7 +27,7 @@ async def step_env(action: int = Body(..., embed=True)):
 
 import gradio as gr
 from ui import demo
-app = gr.mount_gradio_app(app, demo, path="/ui")
+app = gr.mount_gradio_app(app, demo, path="/")
 
 
 if __name__ == "__main__":
