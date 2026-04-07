@@ -1,0 +1,38 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "prompt-auto-tuner"
+version = "1.0.0"
+description = "LLM Prompt Auto-Tuner using OpenEnv-compatible FastAPI and Hugging Face inference"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [
+  { name = "Sommayadeep" }
+]
+dependencies = [
+  "torch",
+  "transformers",
+  "trl",
+  "gymnasium",
+  "numpy",
+  "openai",
+  "fastapi",
+  "uvicorn",
+  "python-dotenv",
+  "requests",
+  "gradio",
+  "pydantic"
+]
+
+[tool.setuptools]
+py-modules = [
+  "app",
+  "config",
+  "environment",
+  "inference",
+  "reward_model",
+  "ui"
+]
