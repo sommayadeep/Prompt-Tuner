@@ -12,7 +12,7 @@ def get_config():
         
     config = {
         "API_BASE_URL": url,
-        "MODEL_NAME": os.environ.get("MODEL_NAME", "meta-llama/Llama-3-8B-Instruct"),
+        "MODEL_NAME": os.environ.get("MODEL_NAME", "meta-llama/Meta-Llama-3-8B-Instruct"),
         "HF_TOKEN": os.environ.get("HF_TOKEN")
     }
 
