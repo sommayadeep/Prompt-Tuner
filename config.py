@@ -5,10 +5,10 @@ def get_config():
     Expert Configuration Loader for ML Submission.
     Reads from os.environ as required by the validator.
     """
-    url = os.environ.get("API_BASE_URL", "https://router.huggingface.co/hf-inference/v1")
+    url = os.environ.get("API_BASE_URL", "https://api-inference.huggingface.co/v1")
     url = url.strip()
-    if "api-inference" in url:
-        url = "https://router.huggingface.co/hf-inference/v1"
+    if "router.huggingface.co/hf-inference" in url:
+        url = "https://api-inference.huggingface.co/v1"
         
     config = {
         "API_BASE_URL": url,

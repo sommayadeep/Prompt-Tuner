@@ -71,6 +71,8 @@ class PromptEnv(gym.Env):
             output_data = response.choices[0].message.content.strip()
         except Exception:
             base_url = self.cfg["API_BASE_URL"].rstrip("/")
+            if "router.huggingface.co/hf-inference" in base_url:
+                base_url = "https://api-inference.huggingface.co/v1"
             endpoint = f"{base_url}/chat/completions"
             headers = {
                 "Authorization": f"Bearer {self.cfg.get('HF_TOKEN', '')}",
