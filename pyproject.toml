@@ -13,6 +13,7 @@ authors = [
   { name = "Sommayadeep" }
 ]
 dependencies = [
+  "openenv-core>=0.2.0",
   "torch",
   "transformers",
   "trl",
@@ -27,6 +28,9 @@ dependencies = [
   "pydantic"
 ]
 
+[project.scripts]
+server = "server.app:main"
+
 [tool.setuptools]
 py-modules = [
   "app",
@@ -36,3 +40,6 @@ py-modules = [
   "reward_model",
   "ui"
 ]
+
+[tool.setuptools.packages.find]
+include = ["server*"]
