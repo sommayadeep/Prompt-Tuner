@@ -1,7 +1,15 @@
 import sys
+import os
 from openai import OpenAI
-import config
 import reward_model
+
+# Required env vars for submission checks.
+API_BASE_URL = os.getenv("API_BASE_URL", "https://router.huggingface.co/v1")
+MODEL_NAME = os.getenv("MODEL_NAME", "HuggingFaceH4/zephyr-7b-beta")
+HF_TOKEN = os.getenv("HF_TOKEN")
+
+# Optional - if using from_docker_image() style workflows.
+LOCAL_IMAGE_NAME = os.getenv("LOCAL_IMAGE_NAME")
 
 def run_inference():
     """
@@ -9,8 +17,7 @@ def run_inference():
     Fulfills Phase 6 'CRITICAL' logging requirements.
     """
     try:
-        cfg = config.get_config()
-        client = OpenAI(base_url=cfg["API_BASE_URL"], api_key=cfg["HF_TOKEN"])
+        client = OpenAI(base_url=API_BASE_URL, api_key=HF_TOKEN)
     except Exception as e:
         print(f"Error: {e}")
         sys.exit(1)
@@ -38,7 +45,7 @@ def run_inference():
         
         try:
             response = client.chat.completions.create(
-                model=cfg["MODEL_NAME"],
+                model=MODEL_NAME,
                 messages=[{"role": "user", "content": full_prompt}],
                 max_tokens=150
             )
