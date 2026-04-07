@@ -6,6 +6,7 @@ def get_config():
     Reads from os.environ as required by the validator.
     """
     url = os.environ.get("API_BASE_URL", "https://router.huggingface.co/hf-inference/v1")
+    url = url.strip()
     if "api-inference" in url:
         url = "https://router.huggingface.co/hf-inference/v1"
         
