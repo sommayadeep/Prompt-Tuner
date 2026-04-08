@@ -35,21 +35,21 @@ class PromptEnv(gym.Env):
         self.default_tasks = [
             {
                 "name": "task1_keywords",
-                "input": "The Eiffel Tower is tall.",
-                "target": {"expected_keywords": ["Eiffel"]},
-                "grader": "reward_model.grade",
+                "input": "The Eiffel Tower is in Paris.",
+                "target": {"expected_keywords": ["Eiffel", "Paris"]},
+                "grader": "reward_model_grade",
             },
             {
                 "name": "task2_keywords",
                 "input": "Ada Lovelace wrote the first algorithm.",
                 "target": {"expected_keywords": ["Ada Lovelace", "algorithm"]},
-                "grader": "reward_model.grade",
+                "grader": "reward_model_grade",
             },
             {
                 "name": "task3_keywords",
                 "input": "Tokyo is a major city in Japan.",
                 "target": {"expected_keywords": ["Tokyo", "Japan"]},
-                "grader": "reward_model.grade",
+                "grader": "reward_model_grade",
             },
         ]
 
@@ -76,7 +76,7 @@ class PromptEnv(gym.Env):
                 if input_text is None:
                     continue
                 name = t.get("name") or f"task_{idx+1}"
-                grader = t.get("grader") or "reward_model.grade"
+                grader = t.get("grader") or "reward_model_grade"
                 # If expected_keywords provided as list, wrap into target dict for grader.
                 if isinstance(target, list):
                     target = {"expected_keywords": target}
