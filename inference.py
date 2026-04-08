@@ -87,7 +87,8 @@ def run_inference():
     total_score = 0.0
 
     print("[START]")
-    for task in tasks:
+    print(f"tasks_total: {len(tasks)}")
+    for idx, task in enumerate(tasks, start=1):
         # Expert Prompt Strategy
         system_prompt = "You are a data extraction assistant. Respond ONLY with valid JSON."
         full_prompt = f"{system_prompt}\n\nInput: {task['input']}"
@@ -104,6 +105,7 @@ def run_inference():
         # Strictly structured STEP block (no blank lines) for validator parsing
         print("[STEP]")
         print(f"task: {task['name']}")
+        print(f"step: {idx}")
         print(f"grader: {task['grader']}")
         print(f"input: {task['input']}")
         print(f"prompt: {log_prompt}")
