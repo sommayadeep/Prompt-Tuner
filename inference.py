@@ -11,6 +11,11 @@ from openai import OpenAI
 import os
 import reward_model
 
+# ✅ EXPLICIT GRADER REGISTRY (Required for Phase 2 validator)
+GRADERS = {
+    "reward_model.grade": reward_model.grade
+}
+
 # Validator-provided env vars (API credentials are optional for our flow)
 API_BASE_URL = os.getenv("API_BASE_URL", "https://router.huggingface.co/v1")
 MODEL_NAME = os.getenv("MODEL_NAME", "meta-llama/Meta-Llama-3-8B-Instruct")

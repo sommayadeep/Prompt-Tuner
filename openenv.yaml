@@ -26,15 +26,21 @@ hardware:
 tasks:
   - id: task1_keywords
     difficulty: easy
-    grader: reward_model.grade
+    grader:
+      type: deterministic
+      endpoint: /grader
     description: "Extract landmark keywords from text"
   
   - id: task2_keywords
     difficulty: medium
-    grader: reward_model.grade
+    grader:
+      type: deterministic
+      endpoint: /grader
     description: "Extract person name keywords from text"
   
   - id: task3_keywords
     difficulty: hard
-    grader: reward_model.grade
+    grader:
+      type: deterministic
+      endpoint: /grader
     description: "Extract location keywords from text"
