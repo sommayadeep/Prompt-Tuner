@@ -65,7 +65,7 @@ class PromptEnv(gym.Env):
         self.current_step = 0
         self.current_prompt = "Extract user data as JSON."
         self.base_prompt = self.current_prompt
-        self.target = {"name": "Sanjay", "role": "Dev"}
+        self.target = {"name": "Sommayadeep", "role": "Saha"}
         self.input_text = ""
         
         if options:

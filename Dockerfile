@@ -6,7 +6,7 @@ ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 
 # Metadata
-LABEL maintainer="Sanjay Kumar"
+LABEL maintainer="Sommayadeep Saha"
 LABEL description="RL Prompt Auto-Tuner Validation Container"
 
 WORKDIR /app

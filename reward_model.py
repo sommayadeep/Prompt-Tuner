@@ -57,8 +57,8 @@ def grade(output, expected):
 
 # Local Validation Test
 if __name__ == "__main__":
-    test_out = '{"name": "Sanjay", "role": "Dev"}'
-    test_exp = {"name": "Sanjay", "role": "Dev"}
+    test_out = '{"name": "Sommayadeep", "role": "Saha"}'
+    test_exp = {"name": "Sommayadeep", "role": "Saha"}
     
     final_score = grade(test_out, test_exp)
     print(f"--- [REWARD STATUS] Validation Pass ---")
