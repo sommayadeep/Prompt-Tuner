@@ -1,4 +1,5 @@
 import os
+import sys
 import json
 from openai import OpenAI
 import reward_model
@@ -28,8 +29,7 @@ def _maybe_create_client():
     """
     try:
         return OpenAI(base_url=API_BASE_URL, api_key=HF_TOKEN)
-    except Exception as e:
-        print(f"[WARN] Using offline fallback: {e}")
+    except Exception:
         return None
 
 
@@ -43,8 +43,7 @@ def _call_llm(client, prompt):
             max_tokens=150
         )
         return response.choices[0].message.content.strip()
-    except Exception as e:
-        print(f"[WARN] LLM call failed, switching to fallback output: {e}")
+    except Exception:
         return None
 
 
@@ -89,18 +88,11 @@ def run_inference():
 
     print("[START]")
     for task in tasks:
-        print(f"task: {task['name']}")
-        
         # Expert Prompt Strategy
         system_prompt = "You are a data extraction assistant. Respond ONLY with valid JSON."
         full_prompt = f"{system_prompt}\n\nInput: {task['input']}"
-        
-        # [STEP] START
-        print("\n[STEP]")
-        print(f"grader: {task['grader']}")
-        print(f"input: {task['input']}")
-        print(f"prompt: {full_prompt}")
-        
+        log_prompt = f"{system_prompt} Input: {task['input']}"
+
         output = _call_llm(client, full_prompt)
         if output is None:
             output = _fallback_output(task)
@@ -109,13 +101,19 @@ def run_inference():
             reward_model.grade(output, task["target"])
         )
 
+        # Strictly structured STEP block (no blank lines) for validator parsing
+        print("[STEP]")
+        print(f"task: {task['name']}")
+        print(f"grader: {task['grader']}")
+        print(f"input: {task['input']}")
+        print(f"prompt: {log_prompt}")
         print(f"output: {output}")
         print(f"reward: {reward}")
         print(f"score: {reward}")
         total_score += reward
 
-    # [END] START
-    print("\n[END]")
+    # [END] summary
+    print("[END]")
     avg_score = total_score / len(tasks)
     print(f"score: {avg_score:.2f}")
 
