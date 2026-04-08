@@ -85,14 +85,12 @@ def main():
         raw_score = reward_model.grade(output, task["target"])
         score = _strict_open_interval_score(raw_score)
 
-        print(f"task: {task['name']}")
         print("[STEP]")
         print(f"task: {task['name']}")
         print(f"grader: {task['grader']}")
         print(f"input: {task['input']}")
         print(f"prompt: {prompt}")
         print(f"output: {output}")
-        print(f"reward: {score}")
         print(f"score: {score}")
 
         total_score += score
