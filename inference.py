@@ -77,8 +77,7 @@ def main():
 
     print("[START]")
     for task in TASKS:
-        # Prompt mimics sample format and is printed verbatim in logs.
-        prompt = f"Extract keywords from: {task['input']}\nReturn JSON {{\"keywords\": [..]}} only."
+        prompt = f"Extract keywords from: {task['input']} | Return JSON {{\"keywords\": [..]}} only."
         output = _call_llm(client, prompt)
         if output is None:
             output = json.dumps(task["target"])
@@ -86,6 +85,7 @@ def main():
         raw_score = reward_model.grade(output, task["target"])
         score = _strict_open_interval_score(raw_score)
 
+        print(f"task: {task['name']}")
         print("[STEP]")
         print(f"task: {task['name']}")
         print(f"grader: {task['grader']}")
