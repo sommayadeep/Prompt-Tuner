@@ -76,7 +76,8 @@ def main():
     total_score = 0.0
 
     print("[START]")
-    for task in TASKS:
+    print(f"tasks_total: {len(TASKS)}")
+    for idx, task in enumerate(TASKS, start=1):
         prompt = f"Extract keywords from: {task['input']}\nReturn JSON {{\"keywords\": [..]}} only."
         output = _call_llm(client, prompt)
         if output is None:
@@ -87,9 +88,11 @@ def main():
 
         print("[STEP]")
         print(f"task: {task['name']}")
+        print(f"step: {idx}")
         print(f"grader: {task['grader']}")
         print(f"input: {task['input']}")
         print(f"output: {output}")
+        print(f"reward: {score}")
         print(f"score: {score}")
 
         total_score += score
