@@ -54,19 +54,19 @@ TASKS = [
         "name": "task1_keywords",
         "input": "The Eiffel Tower is in Paris.",
         "target": {"expected_keywords": ["Eiffel", "Paris"]},
-        "grader": "reward_model.grade",
+        "grader": "/grader",
     },
     {
         "name": "task2_keywords",
         "input": "Ada Lovelace wrote the first algorithm.",
         "target": {"expected_keywords": ["Ada Lovelace", "algorithm"]},
-        "grader": "reward_model.grade",
+        "grader": "/grader",
     },
     {
         "name": "task3_keywords",
         "input": "Tokyo is a major city in Japan.",
         "target": {"expected_keywords": ["Tokyo", "Japan"]},
-        "grader": "reward_model.grade",
+        "grader": "/grader",
     },
 ]
 
@@ -92,7 +92,6 @@ def main():
         print(f"grader: {task['grader']}")
         print(f"input: {task['input']}")
         print(f"output: {output}")
-        print(f"reward: {score}")
         print(f"score: {score}")
 
         total_score += score

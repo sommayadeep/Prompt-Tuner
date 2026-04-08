@@ -29,6 +29,7 @@ tasks:
     grader:
       type: deterministic
       endpoint: /grader
+      name: /grader
     description: "Extract landmark keywords from text"
   
   - id: task2_keywords
@@ -36,6 +37,7 @@ tasks:
     grader:
       type: deterministic
       endpoint: /grader
+      name: /grader
     description: "Extract person name keywords from text"
   
   - id: task3_keywords
@@ -43,4 +45,5 @@ tasks:
     grader:
       type: deterministic
       endpoint: /grader
+      name: /grader
     description: "Extract location keywords from text"
