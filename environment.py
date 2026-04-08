@@ -40,7 +40,7 @@ class PromptEnv(gym.Env):
         
         self.current_prompt = "Extract user data as JSON."
         self.current_step = 0
-        self.tasks = [
+        self.default_tasks = [
             {
                 "name": "landmark_keyword",
                 "input": "The Eiffel Tower is tall.",
@@ -60,6 +60,7 @@ class PromptEnv(gym.Env):
                 "grader": "reward_model.grade",
             },
         ]
+        self.tasks = list(self.default_tasks)
         self.max_steps = len(self.tasks)
 
     def load_tasks(self, tasks):
@@ -87,6 +88,11 @@ class PromptEnv(gym.Env):
                     "grader": grader,
                 }
             )
+        # Guarantee at least 3 tasks by appending defaults as needed.
+        if normalized:
+            fill = list(self.default_tasks)
+            while len(normalized) < 3 and fill:
+                normalized.append(fill.pop(0))
         if normalized:
             self.tasks = normalized
             self.max_steps = len(self.tasks)
