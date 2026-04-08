@@ -13,7 +13,7 @@ import reward_model
 
 # ✅ EXPLICIT GRADER REGISTRY (Required for Phase 2 validator)
 GRADERS = {
-    "reward_model.grade": reward_model.grade
+    "reward_model_grade": reward_model.grade
 }
 
 # Validator-provided env vars (API credentials are optional for our flow)
