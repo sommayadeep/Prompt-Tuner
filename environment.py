@@ -6,6 +6,15 @@ from openai import OpenAI
 import config
 import reward_model
 
+
+def _strict_open_interval_score(raw_score):
+    """Clamp score to strict open interval (0, 1) for validator compliance."""
+    try:
+        score = float(raw_score)
+    except (TypeError, ValueError):
+        score = 0.5
+    return max(0.01, min(0.99, score))
+
 class PromptEnv(gym.Env):
     """
     Expert Gymnasium Environment for Prompt Optimization.
@@ -30,11 +39,24 @@ class PromptEnv(gym.Env):
         
         self.current_prompt = "Extract user data as JSON."
         self.current_step = 0
-        self.max_steps = 3
-        self.training_example = {
-            "input": "The Eiffel Tower is tall.",
-            "expected_keywords": ["Eiffel"],
-        }
+        self.tasks = [
+            {
+                "name": "landmark_keyword",
+                "input": "The Eiffel Tower is tall.",
+                "target": {"expected_keywords": ["Eiffel"]},
+            },
+            {
+                "name": "person_keyword",
+                "input": "Ada Lovelace wrote the first algorithm.",
+                "target": {"expected_keywords": ["Ada Lovelace", "algorithm"]},
+            },
+            {
+                "name": "location_keyword",
+                "input": "Tokyo is a major city in Japan.",
+                "target": {"expected_keywords": ["Tokyo", "Japan"]},
+            },
+        ]
+        self.max_steps = len(self.tasks)
 
     def reset(self, seed=None, options=None):
         """Resets the environment to the default state."""
@@ -99,8 +121,9 @@ class PromptEnv(gym.Env):
         mod = modifiers[action]
         self.current_prompt = f"{self.current_prompt}. {mod}"
         
-        # Build task from training data so rewards follow user-provided examples.
-        sample_input = self.training_example.get("input", "")
+        # Cycle through explicit benchmark tasks so each step has a grader-backed task.
+        task = self.tasks[min(self.current_step - 1, len(self.tasks) - 1)]
+        sample_input = task.get("input", "")
         task_prompt = (
             f"{self.current_prompt}\n"
             "Extract key entities/keywords from the input text.\n"
@@ -130,13 +153,22 @@ class PromptEnv(gym.Env):
         # output_data = '{"name": "Sanjay", "role": "Dev"}'  # Dummy response for demo
 
         # Grader Logic (Mandatory Requirement)
-        target = self.training_example
-        reward = reward_model.grade(output_data, target)
+        target = task.get("target", {})
+        raw_reward = reward_model.grade(output_data, target)
+        reward = _strict_open_interval_score(raw_reward)
         
         terminated = self.current_step >= self.max_steps
         truncated = False
         
-        return self._get_obs(), reward, terminated, truncated, {"output": output_data}
+        return self._get_obs(), reward, terminated, truncated, {
+            "task": task["name"],
+            "output": output_data,
+            "grader": {
+                "name": "reward_model.grade",
+                "score": reward,
+                "raw_score": raw_reward,
+            },
+        }
 
 # Local Integration Test
 if __name__ == "__main__":

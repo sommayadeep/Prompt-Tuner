@@ -2,6 +2,15 @@ import json
 import re
 
 
+def _strict_open_interval_score(raw_score):
+    """Clamp any score to strict open interval (0, 1)."""
+    try:
+        score = float(raw_score)
+    except (TypeError, ValueError):
+        score = 0.5
+    return max(0.01, min(0.99, score))
+
+
 def _normalize_text(value):
     return re.sub(r"\s+", " ", str(value).strip().lower())
 
@@ -52,7 +61,7 @@ def _count_fuzzy_matches(expected_items, predicted_items):
 def grade(output, expected):
     """
     Expert Grader Function for ML Submission.
-    Returns: float between 0.0 and 1.0.
+    Returns: float strictly between 0.0 and 1.0.
     Weights: 0.4 (Format) | 0.3 (Keys) | 0.3 (Values)
     """
     score = 0.0
@@ -61,14 +70,14 @@ def grade(output, expected):
     if expected and isinstance(expected, dict) and "expected_keywords" in expected:
         keywords = [_normalize_text(k) for k in expected.get("expected_keywords", [])]
         if not keywords:
-            return 0.0
+            return _strict_open_interval_score(0.0)
 
         predicted = _extract_predicted_keywords(output)
         if not predicted:
             # If output is not JSON, fall back to weak text matching with cap.
             output_lc = _normalize_text(output)
             hits = sum(1 for kw in keywords if kw in output_lc)
-            return round(min((hits / len(keywords)) * 0.6, 0.6), 2)
+            return _strict_open_interval_score(round(min((hits / len(keywords)) * 0.6, 0.6), 2))
 
         expected_items = sorted(set(keywords))
         predicted_items = sorted(set(predicted))
@@ -78,11 +87,11 @@ def grade(output, expected):
         recall = match_count / len(expected_items) if expected_items else 0.0
 
         if precision + recall == 0:
-            return 0.0
+            return _strict_open_interval_score(0.0)
 
         # F1-like score rewards both completeness and avoiding extra wrong keywords.
         f1 = (2 * precision * recall) / (precision + recall)
-        return round(min(max(f1, 0.0), 1.0), 2)
+        return _strict_open_interval_score(round(min(max(f1, 0.0), 1.0), 2))
 
     # 1. Format Check (0.4)
     # Attempt to extract JSON if the model is talkative
@@ -107,7 +116,7 @@ def grade(output, expected):
         # Invalid format results in 0.0 for this block
         pass
 
-    return round(min(score, 1.0), 2)
+    return _strict_open_interval_score(round(min(score, 1.0), 2))
 
 # Local Validation Test
 if __name__ == "__main__":

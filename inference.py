@@ -11,6 +11,15 @@ HF_TOKEN = os.getenv("HF_TOKEN")
 # Optional - if using from_docker_image() style workflows.
 LOCAL_IMAGE_NAME = os.getenv("LOCAL_IMAGE_NAME")
 
+
+def _strict_open_interval_score(raw_score):
+    """Clamp score to strict open interval (0, 1) for validator compliance."""
+    try:
+        score = float(raw_score)
+    except (TypeError, ValueError):
+        score = 0.5
+    return max(0.01, min(0.99, score))
+
 def run_inference():
     """
     Expert Inference Master Script.
@@ -23,9 +32,24 @@ def run_inference():
         sys.exit(1)
 
     tasks = [
-        {"name": "json_extraction", "input": "Extract name and age: Sanjay is 25.", "target": {"name": "Sanjay", "age": 25}},
-        {"name": "key_value_pairs", "input": "Extract job and city: I am a coder from NYC.", "target": {"job": "coder", "city": "NYC"}},
-        {"name": "classification", "input": "Is this positive? 'I love this!'", "target": {"sentiment": "positive"}}
+        {
+            "name": "json_extraction",
+            "input": "Extract name and age: Sanjay is 25.",
+            "target": {"name": "Sanjay", "age": 25},
+            "grader": "reward_model.grade",
+        },
+        {
+            "name": "key_value_pairs",
+            "input": "Extract job and city: I am a coder from NYC.",
+            "target": {"job": "coder", "city": "NYC"},
+            "grader": "reward_model.grade",
+        },
+        {
+            "name": "classification",
+            "input": "Is this positive? 'I love this!'",
+            "target": {"sentiment": "positive"},
+            "grader": "reward_model.grade",
+        },
     ]
 
     total_score = 0.0
@@ -40,6 +64,7 @@ def run_inference():
         
         # [STEP] START
         print("\n[STEP]")
+        print(f"grader: {task['grader']}")
         print(f"input: {task['input']}")
         print(f"prompt: {full_prompt}")
         
@@ -50,15 +75,21 @@ def run_inference():
                 max_tokens=150
             )
             output = response.choices[0].message.content.strip()
-            reward = reward_model.grade(output, task["target"])
+            reward = _strict_open_interval_score(
+                reward_model.grade(output, task["target"])
+            )
             
             print(f"output: {output}")
             print(f"reward: {reward}")
+            print(f"score: {reward}")
             total_score += reward
 
         except Exception as e:
             print(f"output: ERROR - {str(e)}")
-            print("reward: 0.0")
+            fallback_reward = 0.01
+            print(f"reward: {fallback_reward}")
+            print(f"score: {fallback_reward}")
+            total_score += fallback_reward
 
     # [END] START
     print("\n[END]")
