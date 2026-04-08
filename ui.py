@@ -1,6 +1,8 @@
 import gradio as gr
 import json
 import os
+import re
+import ast
 from environment import PromptEnv
 
 # Define the custom Theme
@@ -11,6 +13,28 @@ ocean_theme = gr.themes.Soft(
     font=[gr.themes.GoogleFont("Inter"), "ui-sans-serif", "system-ui", "sans-serif"]
 )
 
+# Helpers
+def _relaxed_json_loads(text):
+    """
+    Accepts standard JSON, or JSON with trailing commas / extra whitespace,
+    and even Python-literal style as a last resort. Falls back to raising
+    the original JSON error so the UI can surface it cleanly.
+    """
+    if text is None or not str(text).strip():
+        return None
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError as e:
+        # Strip trailing commas before } or ]
+        cleaned = re.sub(r",\s*([}\\]])", r"\\1", text)
+        try:
+            return json.loads(cleaned)
+        except Exception:
+            try:
+                return ast.literal_eval(text)
+            except Exception:
+                raise e
+
 # API Helper function
 def run_optimization(model_id, seed_prompt, training_data):
     # Direct calls to the environment for demonstration
@@ -18,9 +42,7 @@ def run_optimization(model_id, seed_prompt, training_data):
     
     try:
         # Validate JSON input early so users get immediate feedback.
-        parsed_data = []
-        if training_data:
-            parsed_data = json.loads(training_data)
+        parsed_data = _relaxed_json_loads(training_data) or []
 
         env = PromptEnv()
         if model_id:
