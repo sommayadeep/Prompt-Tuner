@@ -78,10 +78,10 @@ async def health_check():
     return {"status": "healthy", "service": "LLM Prompt Auto-Tuner API"}
 
 
-def run_server(host: str = "0.0.0.0", port: int = 7860):
-    """Run the server on specified host and port."""
-    uvicorn.run(app, host=host, port=port)
+def main():
+    """Main entry point for server deployment (Phase 1 Requirement)."""
+    uvicorn.run(app, host="0.0.0.0", port=7860)
 
 
 if __name__ == "__main__":
-    run_server()
+    main()
