@@ -36,6 +36,28 @@ class PromptEnv(gym.Env):
         self.current_prompt = "Extract user data as JSON."
         self.current_step = 0
         self.max_steps = 5
+        
+        # ✅ Phase 2: Default tasks with graders (REQUIRED)
+        self.default_tasks = [
+            {
+                "name": "task1_keywords",
+                "input": "The Eiffel Tower is in Paris.",
+                "target": {"expected_keywords": ["Eiffel", "Paris"]},
+                "grader": "reward_model_grade"
+            },
+            {
+                "name": "task2_keywords",
+                "input": "Ada Lovelace wrote the first algorithm.",
+                "target": {"expected_keywords": ["Ada Lovelace", "algorithm"]},
+                "grader": "reward_model_grade"
+            },
+            {
+                "name": "task3_keywords",
+                "input": "Tokyo is a major city in Japan.",
+                "target": {"expected_keywords": ["Tokyo", "Japan"]},
+                "grader": "reward_model_grade"
+            }
+        ]
 
     def reset(self, seed=None, options=None):
         """Resets the environment to the default state."""

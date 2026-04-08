@@ -19,15 +19,35 @@ async def reset_env(payload: dict = Body(default={})):
     return {"observation": obs.tolist(), "info": info}
 
 @app.post("/step")
-async def step_env(action: int = Body(..., embed=True)):
-    """Mandatory Step Endpoint."""
+async def step_env(payload: dict = Body(default={})):
+    """Mandatory Step Endpoint - Flexible Action Handling."""
     try:
+        # Handle both action formats: int or dict with "command" field
+        action = payload.get("action", 0)
+        if isinstance(action, dict):
+            # Format: {"action": {"command": "..."}}
+            action = 0  # Default action when command is passed
+        elif isinstance(action, (int, float)):
+            # Format: action as integer
+            action = int(action)
+        else:
+            action = 0
+        
         obs, reward, terminated, truncated, info = env.step(action)
+        
+        # ✅ Phase 2: Include grader metadata in response
         return {
             "observation": obs.tolist(),
             "reward": reward,
             "done": terminated or truncated,
-            "info": info
+            "info": {
+                **info,
+                "grader": {
+                    "name": "reward_model_grade",
+                    "score": float(reward),
+                    "raw_score": float(reward)
+                }
+            }
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

@@ -18,7 +18,8 @@ def check_tasks_structure():
     print("="*60)
     
     try:
-        from environment import PromptEnv, GRADERS
+        from environment import PromptEnv
+        from inference import GRADERS
         
         # Check environment.py
         env = PromptEnv()
