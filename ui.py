@@ -47,11 +47,12 @@ def run_optimization(model_id, seed_prompt, training_data):
         env = PromptEnv()
         if model_id:
             env.cfg["MODEL_NAME"] = model_id.strip()
+
+        # Replace default tasks with user-provided list (if valid)
         if isinstance(parsed_data, list) and parsed_data:
-            if isinstance(parsed_data[0], dict):
-                env.training_example = parsed_data[0]
+            env.load_tasks(parsed_data)
         elif isinstance(parsed_data, dict):
-            env.training_example = parsed_data
+            env.load_tasks([parsed_data])
 
         obs, info = env.reset()
         if seed_prompt:

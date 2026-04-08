@@ -62,6 +62,36 @@ class PromptEnv(gym.Env):
         ]
         self.max_steps = len(self.tasks)
 
+    def load_tasks(self, tasks):
+        """
+        Replace default tasks with user-provided tasks (e.g., from UI/JSON).
+        Ensures each task has name/input/target and a grader, and updates max_steps.
+        """
+        normalized = []
+        if not isinstance(tasks, list):
+            return
+        for idx, t in enumerate(tasks):
+            if not isinstance(t, dict):
+                continue
+            input_text = t.get("input")
+            target = t.get("target") or t.get("expected") or {}
+            if not input_text:
+                continue
+            name = t.get("name") or f"task_{idx+1}"
+            grader = t.get("grader") or "reward_model.grade"
+            normalized.append(
+                {
+                    "name": name,
+                    "input": input_text,
+                    "target": target,
+                    "grader": grader,
+                }
+            )
+        if normalized:
+            self.tasks = normalized
+            self.max_steps = len(self.tasks)
+            self.current_step = 0
+
     def reset(self, seed=None, options=None):
         """Resets the environment to the default state."""
         super().reset(seed=seed)
