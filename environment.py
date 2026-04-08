@@ -37,19 +37,19 @@ class PromptEnv(gym.Env):
                 "name": "task1_keywords",
                 "input": "The Eiffel Tower is tall.",
                 "target": {"expected_keywords": ["Eiffel"]},
-                "grader": "/grader",
+                "grader": "reward_model.grade",
             },
             {
                 "name": "task2_keywords",
                 "input": "Ada Lovelace wrote the first algorithm.",
                 "target": {"expected_keywords": ["Ada Lovelace", "algorithm"]},
-                "grader": "/grader",
+                "grader": "reward_model.grade",
             },
             {
                 "name": "task3_keywords",
                 "input": "Tokyo is a major city in Japan.",
                 "target": {"expected_keywords": ["Tokyo", "Japan"]},
-                "grader": "/grader",
+                "grader": "reward_model.grade",
             },
         ]
 
@@ -76,7 +76,7 @@ class PromptEnv(gym.Env):
                 if input_text is None:
                     continue
                 name = t.get("name") or f"task_{idx+1}"
-                grader = t.get("grader") or "/grader"
+                grader = t.get("grader") or "reward_model.grade"
                 # If expected_keywords provided as list, wrap into target dict for grader.
                 if isinstance(target, list):
                     target = {"expected_keywords": target}
@@ -133,7 +133,7 @@ class PromptEnv(gym.Env):
             "task": task["name"],
             "output": output_json,
             "grader": {
-                "name": task.get("grader", "/grader"),
+                "name": task.get("grader", "reward_model.grade"),
                 "score": reward,
                 "raw_score": raw_reward,
             },

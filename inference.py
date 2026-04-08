@@ -54,19 +54,19 @@ TASKS = [
         "name": "task1_keywords",
         "input": "The Eiffel Tower is in Paris.",
         "target": {"expected_keywords": ["Eiffel", "Paris"]},
-        "grader": "/grader",
+        "grader": "reward_model.grade",
     },
     {
         "name": "task2_keywords",
         "input": "Ada Lovelace wrote the first algorithm.",
         "target": {"expected_keywords": ["Ada Lovelace", "algorithm"]},
-        "grader": "/grader",
+        "grader": "reward_model.grade",
     },
     {
         "name": "task3_keywords",
         "input": "Tokyo is a major city in Japan.",
         "target": {"expected_keywords": ["Tokyo", "Japan"]},
-        "grader": "/grader",
+        "grader": "reward_model.grade",
     },
 ]
 

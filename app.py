@@ -40,14 +40,14 @@ async def step_env(payload: dict = Body(default={})):
             "observation": obs.tolist(),
             "reward": reward,
             "done": terminated or truncated,
-                "info": {
-                    **info,
-                    "grader": {
-                        "name": "/grader",
-                        "score": float(reward),
-                        "raw_score": float(info.get("grader", {}).get("raw_score", reward))
-                    }
+            "info": {
+                **info,
+                "grader": {
+                    "name": "reward_model.grade",
+                    "score": float(reward),
+                    "raw_score": float(info.get("grader", {}).get("raw_score", reward))
                 }
+            }
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
