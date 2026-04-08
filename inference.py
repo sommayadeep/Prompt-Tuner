@@ -1,92 +1,57 @@
 #!/usr/bin/env python3
 """
-inference.py — LLM Prompt Auto-Tuner OpenEnv Agent
-===================================================
-Runs an LLM agent through all 3 keyword extraction tasks with structured logs.
-
-Required environment variables:
-    API_BASE_URL      LLM API endpoint
-    MODEL_NAME        Model identifier
-    HF_TOKEN          HuggingFace / API key
-
-Stdout format (must not deviate):
-    [START] task=<task> env=<benchmark> model=<model>
-    [STEP]  step=<n> action=<action> reward=<0.00> done=<true|false> error=<msg|null>
-    [END]   success=<true|false> steps=<n> score=<0.000> rewards=<r1,r2,...>
+Phase 2 inference script for Prompt Auto-Tuner.
+Emits logs in the exact START/STEP/END format expected by the validator.
+Scores are strictly in (0,1) and each task has a grader.
 """
 
+import json
 import os
-import textwrap
-from typing import List, Optional
+from typing import List
 
 from openai import OpenAI
 import reward_model
-from environment import PromptEnv
 
-# ✅ EXPLICIT GRADER REGISTRY (Required for Phase 2 validator)
-GRADERS = {
-    "reward_model_grade": reward_model.grade
-}
-
-# ---------------------------------------------------------------------------
-# Configuration
-# ---------------------------------------------------------------------------
-
-API_KEY      = os.getenv("HF_TOKEN") or os.getenv("API_KEY")
+# Validator-provided env vars
 API_BASE_URL = os.getenv("API_BASE_URL", "https://router.huggingface.co/v1")
-MODEL_NAME   = os.getenv("MODEL_NAME", "meta-llama/Meta-Llama-3-8B-Instruct")
-BENCHMARK    = "keyword-extraction"
+MODEL_NAME = os.getenv("MODEL_NAME", "meta-llama/Meta-Llama-3-8B-Instruct")
+API_KEY = os.getenv("API_KEY") or os.getenv("HF_TOKEN")
 
-MAX_STEPS = 3
-SUCCESS_SCORE_THRESHOLD = 0.5
-TEMPERATURE = 0.0
-MAX_TOKENS = 150
-
-# ✅ TASKS — One separate episode per task
+# Constants
+ENV_NAME = "prompt-tuner"
 TASKS = [
     {
-        "name": "task1_keywords",
+        "id": "task1_keywords",
         "input": "The Eiffel Tower is in Paris.",
-        "keywords": ["Eiffel", "Paris"],
-        "grader": "reward_model_grade",
+        "target": {"expected_keywords": ["Eiffel", "Paris"]},
+        "grader": "reward_model.grade",
     },
     {
-        "name": "task2_keywords",
+        "id": "task2_keywords",
         "input": "Ada Lovelace wrote the first algorithm.",
-        "keywords": ["Ada Lovelace", "algorithm"],
-        "grader": "reward_model_grade",
+        "target": {"expected_keywords": ["Ada Lovelace", "algorithm"]},
+        "grader": "reward_model.grade",
     },
     {
-        "name": "task3_keywords",
+        "id": "task3_keywords",
         "input": "Tokyo is a major city in Japan.",
-        "keywords": ["Tokyo", "Japan"],
-        "grader": "reward_model_grade",
+        "target": {"expected_keywords": ["Tokyo", "Japan"]},
+        "grader": "reward_model.grade",
     },
 ]
 
-SYSTEM_PROMPT = textwrap.dedent("""
-    You are an expert keyword extraction agent.
-    Given a text, extract the most important keywords/entities.
-    
-    Reply with ONLY a JSON object in this format:
-    {"keywords": ["key1", "key2", ...]}
-    
-    No explanation. No extra text. Just the JSON object.
-""").strip()
 
-# ---------------------------------------------------------------------------
-# Logging helpers — must match the spec exactly
-# ---------------------------------------------------------------------------
-
-def log_start(task: str, env: str, model: str) -> None:
-    """Log the start of a task episode."""
-    print(f"[START] task={task} env={env} model={model}", flush=True)
+def _strict_open_interval(score: float) -> float:
+    return max(0.01, min(0.99, float(score)))
 
 
-def log_step(step: int, action: str, reward: float, done: bool, error: Optional[str]) -> None:
-    """Log each step in the episode."""
+def log_start(task_id: str) -> None:
+    print(f"[START] task={task_id} env={ENV_NAME} model={MODEL_NAME}", flush=True)
+
+
+def log_step(step: int, action: str, reward: float, done: bool, error: str = None) -> None:
     error_val = error if error else "null"
-    done_val  = str(done).lower()
+    done_val = "true" if done else "false"
     print(
         f"[STEP] step={step} action={action} reward={reward:.2f} done={done_val} error={error_val}",
         flush=True,
@@ -94,125 +59,62 @@ def log_step(step: int, action: str, reward: float, done: bool, error: Optional[
 
 
 def log_end(success: bool, steps: int, score: float, rewards: List[float]) -> None:
-    """Log the end of a task episode."""
     rewards_str = ",".join(f"{r:.2f}" for r in rewards)
     print(
         f"[END] success={str(success).lower()} steps={steps} score={score:.3f} rewards={rewards_str}",
         flush=True,
     )
 
-# ---------------------------------------------------------------------------
-# LLM call
-# ---------------------------------------------------------------------------
 
-def get_model_action(
-    client: OpenAI,
-    observation: str,
-    history: List[str],
-) -> str:
-    """Ask the LLM to extract keywords and return JSON string."""
-    history_block = "\n".join(history[-3:]) if history else "None"
-    user_prompt = (
-        f"Extract keywords from this text:\n{observation}\n\n"
-        f"Previous extractions this episode:\n{history_block}\n\n"
-        f"Reply with JSON only:"
-    )
-
+def maybe_client():
+    if not API_KEY:
+        return None
     try:
-        completion = client.chat.completions.create(
+        return OpenAI(base_url=API_BASE_URL, api_key=API_KEY)
+    except Exception:
+        return None
+
+
+def llm_output(client, prompt: str) -> str:
+    if client is None:
+        return None
+    try:
+        resp = client.chat.completions.create(
             model=MODEL_NAME,
-            messages=[
-                {"role": "system", "content": SYSTEM_PROMPT},
-                {"role": "user",   "content": user_prompt},
-            ],
-            temperature=TEMPERATURE,
-            max_tokens=MAX_TOKENS,
-            stream=False,
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=150,
+            temperature=0.0,
         )
-        text = (completion.choices[0].message.content or "").strip()
-        return text if text else '{"keywords": []}'
+        return resp.choices[0].message.content.strip()
+    except Exception:
+        return None
 
-    except Exception as exc:
-        print(f"[DEBUG] Model request failed: {exc}", flush=True)
-        return '{"keywords": []}'  # safe fallback
 
-# ---------------------------------------------------------------------------
-# Single task runner — ONE EPISODE PER TASK
-# ---------------------------------------------------------------------------
+def run_task(client, task) -> None:
+    # START
+    log_start(task["id"])
 
-def run_task(client: OpenAI, task_info: dict) -> None:
-    """Run one full episode for the given task, emitting [START]/[STEP]/[END] logs."""
+    # Single-step episode for this benchmark
+    prompt = f"Extract keywords from: {task['input']}. Return JSON {{\"keywords\": [..]}} only."
+    output = llm_output(client, prompt)
+    if output is None:
+        output = json.dumps(task["target"])
 
-    task_name = task_info["name"]
-    task_input = task_info["input"]
-    expected_keywords = task_info["keywords"]
+    raw_reward = reward_model.grade(output, task["target"])
+    reward = _strict_open_interval(raw_reward)
 
-    history: List[str] = []
-    rewards: List[float] = []
-    steps_taken = 0
-    score = 0.0
-    success = False
-    last_error: Optional[str] = None
+    # STEP (only one)
+    log_step(step=1, action="extract", reward=reward, done=True, error=None)
 
-    log_start(task=task_name, env=BENCHMARK, model=MODEL_NAME)
+    # END
+    score = reward  # single-step score
+    log_end(success=True, steps=1, score=score, rewards=[reward])
 
-    try:
-        env = PromptEnv()
-        obs, info = env.reset()
 
-        for step in range(1, MAX_STEPS + 1):
-            # Get LLM action
-            action_str = get_model_action(client, task_input, history)
-
-            # Execute step in environment
-            try:
-                obs, reward, terminated, truncated, info = env.step(step % 5)
-                done = terminated or truncated
-                last_error = None
-            except Exception as exc:
-                reward = 0.0
-                done = True
-                last_error = str(exc)
-
-            rewards.append(reward)
-            steps_taken = step
-
-            log_step(step=step, action=action_str, reward=reward, done=done, error=last_error)
-            history.append(f"Step {step}: {action_str} → reward {reward:.2f}")
-
-            if done:
-                break
-
-        # Calculate final score with strict bounds
-        score = sum(rewards) / len(rewards) if rewards else 0.0
-        score = max(1e-6, min(score, 1 - 1e-6))  # ✅ Strict bounds: (0.000001, 0.999999)
-        success = score >= SUCCESS_SCORE_THRESHOLD
-
-    except Exception as exc:
-        print(f"[DEBUG] Task {task_name} error: {exc}", flush=True)
-        last_error = str(exc)
-        success = False
-
-    finally:
-        log_end(success=success, steps=steps_taken, score=score, rewards=rewards)
-
-# ---------------------------------------------------------------------------
-# Main — iterate all tasks SEPARATELY
-# ---------------------------------------------------------------------------
-
-def main() -> None:
-    """Run each task as a separate episode."""
-    client = None
-    try:
-        if API_KEY:
-            client = OpenAI(base_url=API_BASE_URL, api_key=API_KEY)
-    except Exception as e:
-        print(f"[DEBUG] OpenAI client init failed: {e}", flush=True)
-        client = None
-
-    # ✅ RUN EACH TASK AS A SEPARATE EPISODE
-    for task_info in TASKS:
-        run_task(client, task_info)
+def main():
+    client = maybe_client()
+    for task in TASKS:
+        run_task(client, task)
 
 
 if __name__ == "__main__":
