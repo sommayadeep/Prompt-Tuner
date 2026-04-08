@@ -1,0 +1,63 @@
+[build-system]
+requires = ["setuptools>=45", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "prompt-auto-tuner"
+version = "1.0.0"
+description = "Expert RL Environment for Optimizing LLM Prompts using the HF Inference API"
+readme = "README.md"
+license = {text = "MIT"}
+authors = [
+    {name = "Sommayadeep Saha", email = "sommayadeepsaha@gmail.com"}
+]
+keywords = ["reinforcement-learning", "prompt-optimization", "llm", "huggingface"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+]
+requires-python = ">=3.9"
+dependencies = [
+    "openenv-core>=0.1.0",
+    "gymnasium>=0.29.0",
+    "numpy>=1.23.0",
+    "openai>=1.0.0",
+    "fastapi>=0.104.0",
+    "uvicorn>=0.24.0",
+    "gradio>=4.0.0",
+    "pydantic>=2.0.0",
+    "python-dotenv>=1.0.0",
+    "requests>=2.31.0",
+    "pyyaml>=6.0",
+    "transformers>=4.30.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "black>=23.0.0",
+    "flake8>=6.0.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/sommayadeep/Prompt-Tuner"
+Repository = "https://github.com/sommayadeep/Prompt-Tuner"
+Documentation = "https://github.com/sommayadeep/Prompt-Tuner/blob/main/README.md"
+
+[project.scripts]
+prompt-tuner = "inference:main"
+
+[tool.setuptools]
+packages = [""]
+
+[tool.black]
+line-length = 100
+target-version = ['py39', 'py310']
+
+[tool.isort]
+profile = "black"
+line_length = 100
