@@ -21,3 +21,26 @@ hardware:
   vCPU: 2
   RAM: "8GB"
   GPU: "None"
+
+# Tasks with inline graders (REQUIRED for Phase 2)
+tasks:
+  - id: task1_keywords
+    difficulty: easy
+    grader:
+      type: deterministic
+      endpoint: /grader
+    description: "Extract landmark keywords from text"
+  
+  - id: task2_keywords
+    difficulty: medium
+    grader:
+      type: deterministic
+      endpoint: /grader
+    description: "Extract person name keywords from text"
+  
+  - id: task3_keywords
+    difficulty: hard
+    grader:
+      type: deterministic
+      endpoint: /grader
+    description: "Extract location keywords from text"
